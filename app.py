@@ -333,5 +333,7 @@ def logout():
 # ---------- MAIN ----------
 if __name__ == '__main__':
     init_db()
-    port = int(os.environ.get("PORT", 5000))
+    # Get the port from the environment variable Render sets, default to 10000 if not set
+    port = int(os.environ.get("PORT", 10000))
+    # Bind to 0.0.0.0 so Render can route traffic to it
     app.run(host="0.0.0.0", port=port, debug=True, threaded=True)
