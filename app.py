@@ -1,15 +1,25 @@
 import os
+
+# ---------------- YOLO CONFIG FIX ----------------
+# Set YOLO config dir to a writable location
+os.environ['YOLO_CONFIG_DIR'] = os.path.join(os.getcwd(), 'yolo_config')
+os.makedirs(os.environ['YOLO_CONFIG_DIR'], exist_ok=True)
+# -------------------------------------------------
+
 import cv2
 import sqlite3
 import threading
 import time
-from datetime import datetime
+from datetime import datetime, timedelta
+from ultralytics import YOLO
 from flask import Flask, request, render_template, redirect, url_for, session, flash, Response, jsonify
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
-from ultralytics import YOLO
 import numpy as np
-
+from PIL import Image
+#import winsound
+import base64
+import io
 # ---------- CONFIGURATION ----------
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 OUTPUT_FOLDER = os.path.join('static', 'outputs')
