@@ -10,7 +10,7 @@ from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 import numpy as np
 from PIL import Image
-import winsound
+#import winsound
 import base64
 import io
 
@@ -103,7 +103,7 @@ def play_alert():
     
     if os.path.exists(ALERT_SOUND):
         try:
-            winsound.PlaySound(ALERT_SOUND, winsound.SND_ASYNC)
+            #winsound.PlaySound(ALERT_SOUND, winsound.SND_ASYNC)
             last_alert_time = current_time
             return True
         except Exception as e:
