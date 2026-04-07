@@ -5,6 +5,7 @@ import sqlite3
 import threading
 import time
 from datetime import datetime, timedelta
+from ultralytics import YOLO
 from flask import Flask, request, render_template, redirect, url_for, session, flash, Response, jsonify
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
