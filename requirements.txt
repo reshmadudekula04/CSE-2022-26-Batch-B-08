@@ -6,3 +6,4 @@ matplotlib
 gunicorn
 setuptools
 wheel
+flask
