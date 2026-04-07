@@ -599,4 +599,20 @@ if __name__ == '__main__':
         os.makedirs(OUTPUT_FOLDER, exist_ok=True)
         print(f"Created output folder: {OUTPUT_FOLDER}")
     
-    app.run(debug=True, threaded=True, port=5000)
+    if __name__ == '__main__':
+    init_db()
+    if MODEL is None:
+        print("Warning: Model failed to load. Please check the model file.")
+
+    # Cleanup on exit
+    import atexit
+    @atexit.register
+    def cleanup():
+        global camera
+        if camera is not None:
+            camera.release()
+
+    # Run the app
+    port = int(os.environ.get("PORT", 5000))  # Use Render's PORT env variable
+    print(f"Starting Flask server on port {port}...")
+    app.run(host="0.0.0.0", port=port, debug=True, threaded=True)
