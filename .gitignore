@@ -3,7 +3,6 @@ __pycache__/
 *.pyc
 
 # Ignore model & heavy files
-*.pt
 *.pth
 *.onnx
 *.h5
