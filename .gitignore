@@ -5,6 +5,8 @@ __pycache__/
 # Ignore model & heavy files
 *.pth
 *.onnx
+*.pt
+*.h5
 
 # Ignore datasets
 datasets/
