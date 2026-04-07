@@ -1,0 +1,17 @@
+venv/
+__pycache__/
+*.pyc
+
+# Ignore model & heavy files
+*.pt
+*.pth
+*.onnx
+*.h5
+
+# Ignore datasets
+datasets/
+data/
+*.zip
+
+# Ignore notebooks
+*.ipynb

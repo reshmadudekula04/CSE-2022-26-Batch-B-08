@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home - Weapon Detection System</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="bg-gray-50 font-sans">
+    <!-- Navbar -->
+    <nav class="bg-blue-600 p-4 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <a href="{{url_for('home')}}" class="text-white text-2xl font-bold flex items-center">
+                <i class="fas fa-shield-alt mr-2"></i>Weapon Detection
+            </a>
+            <div class="space-x-4">
+                <a href="{{url_for('home')}}" class="text-white hover:text-blue-200 px-3 py-2 rounded-lg bg-blue-700">
+                    <i class="fas fa-home mr-1"></i> Home
+                </a>
+                <a href="{{url_for('predict')}}" class="text-white hover:text-blue-200 px-3 py-2 rounded-lg hover:bg-blue-700">
+                    <i class="fas fa-search mr-1"></i> Image Detection
+                </a>
+                <a href="{{url_for('live')}}" class="text-white hover:text-blue-200 px-3 py-2 rounded-lg hover:bg-blue-700">
+                    <i class="fas fa-video mr-1"></i> Live Detection
+                </a>
+                <a href="{{url_for('logout')}}" class="text-white hover:text-red-200 px-3 py-2 rounded-lg hover:bg-red-600">
+                    <i class="fas fa-sign-out-alt mr-1"></i> Logout
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mx-auto mt-4 px-4">
+                {% for category, message in messages %}
+                    <div class="p-4 rounded-lg animate__animated animate__fadeIn 
+                        {% if category == 'error' %}bg-red-100 text-red-700 border border-red-300
+                        {% elif category == 'success' %}bg-green-100 text-green-700 border border-green-300
+                        {% elif category == 'warning' %}bg-yellow-100 text-yellow-700 border border-yellow-300
+                        {% else %}bg-blue-100 text-blue-700 border border-blue-300{% endif %}">
+                        <div class="flex items-center">
+                            {% if category == 'warning' %}
+                                <i class="fas fa-exclamation-triangle mr-3"></i>
+                            {% elif category == 'success' %}
+                                <i class="fas fa-check-circle mr-3"></i>
+                            {% endif %}
+                            {{ message }}
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <!-- Welcome Section -->
+    <section class="container mx-auto py-12 px-4">
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-bold text-gray-800 mb-4 animate__animated animate__fadeInDown">
+                Welcome to Weapon Detection System
+            </h1>
+            <p class="text-xl text-gray-600 max-w-2xl mx-auto animate__animated animate__fadeInUp">
+                Secure your premises with AI-powered weapon detection technology
+            </p>
+        </div>
+
+        <!-- Main Features -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-200 animate__animated animate__fadeInUp">
+                <div class="text-center mb-6">
+                    <div class="bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-camera text-blue-600 text-3xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-3">Image Detection</h2>
+                    <p class="text-gray-600">
+                        Upload images to detect weapons using AI. Supports multiple image formats.
+                    </p>
+                </div>
+                <a href="{{url_for('predict')}}" class="block w-full bg-blue-600 text-white text-center py-3 rounded-lg hover:bg-blue-700 transition duration-300 flex items-center justify-center">
+                    <i class="fas fa-upload mr-2"></i> Upload Image
+                </a>
+            </div>
+
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-200 animate__animated animate__fadeInUp animate__delay-1s">
+                <div class="text-center mb-6">
+                    <div class="bg-green-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-video text-green-600 text-3xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-3">Live Detection</h2>
+                    <p class="text-gray-600">
+                        Real-time weapon detection using webcam. Instant alerts for detected weapons.
+                    </p>
+                </div>
+                <a href="{{url_for('live')}}" class="block w-full bg-green-600 text-white text-center py-3 rounded-lg hover:bg-green-700 transition duration-300 flex items-center justify-center">
+                    <i class="fas fa-play mr-2"></i> Start Live Detection
+                </a>
+            </div>
+
+            <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-200 animate__animated animate__fadeInUp animate__delay-2s">
+                <div class="text-center mb-6">
+                    <div class="bg-purple-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-shield-alt text-purple-600 text-3xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-bold text-gray-800 mb-3">Security Features</h2>
+                    <p class="text-gray-600">
+                        Custom alerts, audio notifications, and security settings for your system.
+                    </p>
+                </div>
+                <button onclick="showFeatures()" class="block w-full bg-purple-600 text-white text-center py-3 rounded-lg hover:bg-purple-700 transition duration-300 flex items-center justify-center">
+                    <i class="fas fa-cog mr-2"></i> View Features
+                </button>
+            </div>
+        </div>
+
+        <!-- How It Works -->
+        <div class="bg-white p-8 rounded-xl shadow-lg border border-gray-200 mb-12">
+            <h2 class="text-3xl font-bold text-gray-800 mb-8 text-center">How It Works</h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="text-center">
+                    <div class="bg-blue-50 p-6 rounded-lg inline-block mb-4">
+                        <i class="fas fa-upload text-blue-600 text-4xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">1. Upload Image</h3>
+                    <p class="text-gray-600">Upload an image containing potential weapons</p>
+                </div>
+                <div class="text-center">
+                    <div class="bg-green-50 p-6 rounded-lg inline-block mb-4">
+                        <i class="fas fa-brain text-green-600 text-4xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">2. AI Analysis</h3>
+                    <p class="text-gray-600">YOLO model analyzes the image for weapons</p>
+                </div>
+                <div class="text-center">
+                    <div class="bg-red-50 p-6 rounded-lg inline-block mb-4">
+                        <i class="fas fa-bell text-red-600 text-4xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-gray-800 mb-2">3. Get Results</h3>
+                    <p class="text-gray-600">Receive detection results with alerts</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Detection Types -->
+        <div class="bg-gradient-to-r from-blue-500 to-blue-700 rounded-xl shadow-xl p-8 text-white mb-12">
+            <h2 class="text-3xl font-bold mb-6 text-center">What We Detect</h2>
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                <div class="text-center">
+                    <div class="bg-white/20 p-4 rounded-xl mb-3">
+                        <i class="fas fa-gun text-3xl"></i>
+                    </div>
+                    <h4 class="font-bold text-lg">Gun</h4>
+                </div>
+                <div class="text-center">
+                    <div class="bg-white/20 p-4 rounded-xl mb-3">
+                        <i class="fas fa-gun text-3xl"></i>
+                    </div>
+                    <h4 class="font-bold text-lg">Handgun</h4>
+                </div>
+                <div class="text-center">
+                    <div class="bg-white/20 p-4 rounded-xl mb-3">
+                        <i class="fas fa-knife text-3xl"></i>
+                    </div>
+                    <h4 class="font-bold text-lg">Knife</h4>
+                </div>
+                <div class="text-center">
+                    <div class="bg-white/20 p-4 rounded-xl mb-3">
+                        <i class="fas fa-bomb text-3xl"></i>
+                    </div>
+                    <h4 class="font-bold text-lg">Grenade</h4>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Start -->
+        <div class="text-center">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Ready to Start?</h2>
+            <p class="text-gray-600 mb-8 max-w-2xl mx-auto">
+                Begin detecting weapons right away. The system is ready to scan your images and live camera feed for security threats.
+            </p>
+            <div class="flex flex-col sm:flex-row justify-center gap-4">
+                <a href="{{url_for('predict')}}" class="inline-flex items-center bg-blue-600 text-white px-8 py-4 rounded-lg text-lg font-bold hover:bg-blue-700 transition duration-300">
+                    <i class="fas fa-image mr-3"></i>
+                    Start Image Detection
+                </a>
+                <a href="{{url_for('live')}}" class="inline-flex items-center bg-green-600 text-white px-8 py-4 rounded-lg text-lg font-bold hover:bg-green-700 transition duration-300">
+                    <i class="fas fa-video mr-3"></i>
+                    Start Live Detection
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white p-6 mt-12">
+        <div class="container mx-auto text-center">
+            <div class="mb-4">
+                <i class="fas fa-shield-alt text-3xl text-blue-400 mb-2"></i>
+                <p class="text-2xl font-bold">Weapon Detection System</p>
+            </div>
+            <p class="text-gray-400 mb-4">AI-powered security solution for public safety</p>
+            <div class="flex justify-center space-x-6 mb-4">
+                <a href="#" class="text-gray-400 hover:text-white">
+                    <i class="fab fa-github text-xl"></i>
+                </a>
+                <a href="#" class="text-gray-400 hover:text-white">
+                    <i class="fab fa-linkedin text-xl"></i>
+                </a>
+                <a href="#" class="text-gray-400 hover:text-white">
+                    <i class="fas fa-envelope text-xl"></i>
+                </a>
+            </div>
+            <p class="text-gray-500 text-sm">&copy; 2026 Weapon Detection System. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        function showFeatures() {
+            alert("Security Features:\n\n• Real-time Image Detection\n• Live Camera Monitoring\n• Audio Alert System\n• Multiple Weapon Detection\n• High Accuracy AI Model\n• Instant Notifications\n• Secure User Authentication");
+        }
+
+        // Add active class to current page
+        document.addEventListener('DOMContentLoaded', function() {
+            const currentPath = window.location.pathname;
+            const navLinks = document.querySelectorAll('nav a');
+            
+            navLinks.forEach(link => {
+                if (link.getAttribute('href') === currentPath) {
+                    link.classList.add('bg-blue-700');
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Image Detection - Weapon Detection System</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/animate.css/4.1.1/animate.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    .weapon-alert {
+      animation: pulse 1.5s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); opacity: 1; }
+      50% { transform: scale(1.05); opacity: 0.9; }
+      100% { transform: scale(1); opacity: 1; }
+    }
+    .upload-area {
+      border: 2px dashed #d1d5db;
+      transition: all 0.3s ease;
+    }
+    .upload-area:hover {
+      border-color: #3b82f6;
+      background-color: #f8fafc;
+    }
+    .upload-area.dragover {
+      border-color: #10b981;
+      background-color: #f0fdf4;
+    }
+    .confidence-bar {
+      transition: width 0.5s ease-in-out;
+    }
+    .detection-card {
+      transition: all 0.3s ease;
+    }
+    .detection-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+    .detection-image {
+      max-height: 500px;
+      object-fit: contain;
+      background-color: #f3f4f6;
+    }
+  </style>
+</head>
+
+<body class="bg-gradient-to-br from-gray-50 to-gray-100 font-sans min-h-screen">
+
+  <!-- Navbar -->
+  <nav class="bg-gradient-to-r from-blue-600 to-blue-800 p-4 shadow-xl">
+    <div class="container mx-auto flex justify-between items-center">
+      <div class="flex items-center space-x-3">
+        <div class="bg-white p-2 rounded-xl">
+          <i class="fas fa-shield-alt text-blue-600 text-2xl"></i>
+        </div>
+        <a href="{{ url_for('home') }}" class="text-white text-3xl font-bold">Weapon Detection</a>
+      </div>
+      <div class="flex items-center space-x-6">
+        <a href="{{ url_for('home') }}" class="text-white hover:text-blue-200 px-4 py-2 rounded-lg transition duration-300 hover:bg-white/10">
+          <i class="fas fa-home mr-2"></i>Home
+        </a>
+        <a href="{{ url_for('predict') }}" class="text-white hover:text-blue-200 px-4 py-2 rounded-lg transition duration-300 bg-white/20">
+          <i class="fas fa-image mr-2"></i>Image Detection
+        </a>
+        <a href="{{ url_for('live') }}" class="text-white hover:text-blue-200 px-4 py-2 rounded-lg transition duration-300 hover:bg-white/10">
+          <i class="fas fa-video mr-2"></i>Live Detection
+        </a>
+        <a href="{{ url_for('logout') }}" class="text-white hover:text-red-200 px-4 py-2 rounded-lg transition duration-300 hover:bg-red-500/20">
+          <i class="fas fa-sign-out-alt mr-2"></i>Logout
+        </a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Flash Messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      <div class="container mx-auto mt-4 px-4">
+        {% for category, message in messages %}
+          <div class="p-4 rounded-xl animate__animated animate__fadeIn 
+            {% if category == 'error' %}bg-red-100 text-red-700 border border-red-300
+            {% elif category == 'success' %}bg-green-100 text-green-700 border border-green-300
+            {% elif category == 'warning' %}bg-yellow-100 text-yellow-700 border border-yellow-300 weapon-alert
+            {% else %}bg-blue-100 text-blue-700 border border-blue-300{% endif %}">
+            <div class="flex items-center">
+              {% if category == 'warning' %}
+                <i class="fas fa-exclamation-triangle mr-3 text-yellow-600"></i>
+              {% elif category == 'success' %}
+                <i class="fas fa-check-circle mr-3 text-green-600"></i>
+              {% elif category == 'error' %}
+                <i class="fas fa-times-circle mr-3 text-red-600"></i>
+              {% endif %}
+              <span class="font-medium">{{ message }}</span>
+            </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+  {% endwith %}
+
+  <!-- Main Section -->
+  <section class="container mx-auto px-4 py-8">
+    <div class="text-center mb-10">
+      <h1 class="text-4xl md:text-5xl font-bold text-gray-800 mb-3 animate__animated animate__fadeInDown">
+        Image Weapon Detection
+      </h1>
+      <p class="text-xl text-gray-600 animate__animated animate__fadeInUp">
+        Upload an image to detect weapons using AI-powered YOLO technology
+      </p>
+    </div>
+
+    <div class="max-w-6xl mx-auto">
+      <!-- Upload Card -->
+      <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 animate__animated animate__fadeInUp">
+        <div class="text-center mb-8">
+          <div class="bg-blue-100 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+            <i class="fas fa-cloud-upload-alt text-blue-600 text-3xl"></i>
+          </div>
+          <h2 class="text-3xl font-bold text-gray-800 mb-3">Upload Image for Analysis</h2>
+          <p class="text-gray-600 max-w-2xl mx-auto">
+            Upload an image file and our AI system will analyze it for weapons detection
+          </p>
+        </div>
+
+        <form action="{{ url_for('predict') }}" method="POST" enctype="multipart/form-data">
+          <div class="mb-8">
+            <div class="upload-area rounded-xl p-10 text-center">
+              <input type="file" id="image" name="image" accept="image/*" class="w-full" required>
+            </div>
+            <p class="text-sm text-gray-500 mt-2 text-center">Supported formats: JPG, JPEG, PNG, GIF, BMP (Max 10MB)</p>
+          </div>
+
+          <button type="submit" 
+                  class="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white text-lg font-bold py-4 px-6 rounded-xl hover:from-blue-700 hover:to-blue-800 transition duration-300 shadow-lg flex items-center justify-center">
+            <i class="fas fa-search mr-3"></i>
+            Detect Weapons in Image
+          </button>
+        </form>
+      </div>
+
+      <!-- Results Section -->
+      {% if result %}
+      <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 animate__animated animate__fadeInUp detection-card">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-3xl font-bold text-gray-800">Detection Results</h2>
+          <div class="flex items-center space-x-2">
+            <div class="w-3 h-3 rounded-full {% if 'Weapon detected' in result %}bg-red-500 animate-pulse{% else %}bg-green-500{% endif %}"></div>
+            <span class="font-medium {% if 'Weapon detected' in result %}text-red-600{% else %}text-green-600{% endif %}">
+              {{ result }}
+            </span>
+          </div>
+        </div>
+
+        {% if detections %}
+        <!-- Detections Grid -->
+        <div class="mb-8">
+          <h3 class="text-xl font-bold text-gray-800 mb-6 flex items-center">
+            <i class="fas fa-list-check mr-3 text-blue-500"></i>
+            Detected Objects
+          </h3>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {% for detection in detections %}
+            <div class="bg-gray-50 p-6 rounded-xl border {% if detection.label in ['Grenade', 'Gun', 'Handgun', 'Knife'] %}border-red-200 bg-red-50{% else %}border-gray-200{% endif %}">
+              <div class="flex justify-between items-start mb-4">
+                <div>
+                  <h4 class="text-lg font-bold {% if detection.label in ['Grenade', 'Gun', 'Handgun', 'Knife'] %}text-red-700{% else %}text-gray-700{% endif %}">
+                    {{ detection.label }}
+                  </h4>
+                  <div class="flex items-center mt-1">
+                    <span class="text-sm text-gray-500">Confidence:</span>
+                    <span class="ml-2 font-mono font-bold {% if detection.confidence > 0.7 %}text-green-600{% elif detection.confidence > 0.4 %}text-yellow-600{% else %}text-red-600{% endif %}">
+                      {{ "%.1f"|format(detection.confidence * 100) }}%
+                    </span>
+                  </div>
+                </div>
+                {% if detection.label in ['Grenade', 'Gun', 'Handgun', 'Knife'] %}
+                <span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-xs font-bold">
+                  <i class="fas fa-exclamation-triangle mr-1"></i>WEAPON
+                </span>
+                {% else %}
+                <span class="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-xs font-medium">
+                  OBJECT
+                </span>
+                {% endif %}
+              </div>
+              
+              <!-- Confidence Bar -->
+              <div class="mt-4">
+                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                  <span>Detection Confidence</span>
+                  <span>{{ "%.1f"|format(detection.confidence * 100) }}%</span>
+                </div>
+                <div class="w-full bg-gray-200 rounded-full h-2.5">
+                  <div class="confidence-bar h-2.5 rounded-full 
+                    {% if detection.confidence > 0.7 %}bg-green-500
+                    {% elif detection.confidence > 0.4 %}bg-yellow-500
+                    {% else %}bg-red-500{% endif %}" 
+                    style="width: {{ (detection.confidence * 100)|round|int }}%">
+                  </div>
+                </div>
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Detection Visualization -->
+        {% if image_url %}
+        <div class="mb-8">
+          <h3 class="text-xl font-bold text-gray-800 mb-4 flex items-center">
+            <i class="fas fa-eye mr-3 text-blue-500"></i>
+            Detection Visualization
+          </h3>
+          <div class="bg-gray-900 rounded-xl p-4">
+            <div class="relative">
+              <img src="{{ image_url }}" alt="Detection Output" 
+                   class="w-full rounded-lg shadow-lg mx-auto detection-image"
+                   onerror="this.onerror=null; this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNTYgMTI4QzI4MS4zNzMgMTI4IDMwNCAxNTAuNjI3IDMwNCAxNzZDMzA0IDIwMS4zNzMgMjgxLjNsaTQyNCAyNTYgMjI0QzIzMC42MjcgMjI0IDIwOCAyMDEuMzczIDIwOCAxNzZDMjA4IDE1MC42MjcgMjMwLjYyNyAxMjggMjU2IDEyOFpNMjU2IDMyMEMzMDcuMiAzMjAgMzUyIDM0NC44IDM1MiAzODRWNDE2QzM1MiA0MjUuNDcxIDM0NC40NzEgNDMzIDMzNSA0MzNIMTc3QzE2Ny41MjkgNDMzIDE2MCA0MjUuNDcxIDE2MCA0MTZWMzg0QzE2MCAzNDQuOCAyMDQuOCAzMjAgMjU2IDMyMFoiIGZpbGw9IiM4RTkwQTAiLz4KPC9zdmc+Cg==';">
+              <div class="absolute top-4 left-4 bg-black/70 text-white px-3 py-2 rounded-lg">
+                <i class="fas fa-shield-alt mr-2"></i>
+                <span class="text-sm font-medium">AI Detection Output</span>
+              </div>
+            </div>
+            
+          </div>
+        </div>
+        {% else %}
+        <div class="mb-8 p-6 bg-yellow-50 border border-yellow-200 rounded-xl">
+          <div class="flex items-center">
+            <i class="fas fa-exclamation-triangle text-yellow-600 text-2xl mr-4"></i>
+            <div>
+              <h4 class="font-bold text-yellow-800">Image Not Available</h4>
+              <p class="text-yellow-600 text-sm mt-1">The detection image could not be loaded. Please try uploading again.</p>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+
+        {% else %}
+        <div class="text-center py-10">
+          <div class="bg-yellow-50 border border-yellow-200 rounded-xl p-8 inline-block">
+            <i class="fas fa-search text-yellow-500 text-4xl mb-4"></i>
+            <p class="text-yellow-800 text-lg font-medium">No objects detected in the uploaded image</p>
+            <p class="text-yellow-600 mt-2">Try uploading a different image with better lighting and clarity</p>
+          </div>
+        </div>
+        {% endif %}
+
+        <!-- Action Buttons -->
+        <div class="flex flex-col sm:flex-row gap-4 mt-8">
+          <a href="{{ url_for('predict') }}" class="flex-1 bg-blue-600 text-white text-center py-3 rounded-xl font-medium hover:bg-blue-700 transition duration-300">
+            <i class="fas fa-rotate mr-2"></i>Analyze Another Image
+          </a>
+          
+          {% if image_url %}
+          <a href="{{ image_url }}" download="detection_result.jpg" class="flex-1 bg-green-600 text-white text-center py-3 rounded-xl font-medium hover:bg-green-700 transition duration-300">
+            <i class="fas fa-download mr-2"></i>Download Image
+          </a>
+          {% endif %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- How It Works -->
+      <div class="bg-white rounded-2xl shadow-xl p-8 animate__animated animate__fadeInUp">
+        <h3 class="text-2xl font-bold text-gray-800 mb-6 text-center">How Image Detection Works</h3>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="text-center">
+            <div class="bg-blue-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span class="bg-blue-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold">1</span>
+            </div>
+            <h4 class="font-bold text-gray-800 mb-2">Upload Image</h4>
+            <p class="text-gray-600 text-sm">Select or drag-and-drop an image containing potential weapons</p>
+          </div>
+          <div class="text-center">
+            <div class="bg-green-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span class="bg-green-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold">2</span>
+            </div>
+            <h4 class="font-bold text-gray-800 mb-2">AI Processing</h4>
+            <p class="text-gray-600 text-sm">YOLO AI model analyzes the image in real-time for weapons</p>
+          </div>
+          <div class="text-center">
+            <div class="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4">
+              <span class="bg-red-600 text-white w-10 h-10 rounded-full flex items-center justify-center text-lg font-bold">3</span>
+            </div>
+            <h4 class="font-bold text-gray-800 mb-2">Get Results</h4>
+            <p class="text-gray-600 text-sm">View detection results with confidence scores and visual markers</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-800 text-white py-8 mt-12">
+    <div class="container mx-auto px-4">
+      <div class="flex flex-col md:flex-row justify-between items-center">
+        <div class="mb-6 md:mb-0">
+          <div class="flex items-center mb-3">
+            <i class="fas fa-shield-alt text-2xl mr-3 text-blue-400"></i>
+            <span class="text-2xl font-bold">Weapon Detection System</span>
+          </div>
+          <p class="text-gray-400">Advanced AI-powered security for public safety</p>
+        </div>
+        <div class="flex space-x-6">
+          <a href="{{ url_for('home') }}" class="text-gray-400 hover:text-white transition duration-300">
+            <i class="fas fa-home"></i>
+          </a>
+          <a href="{{ url_for('predict') }}" class="text-gray-400 hover:text-white transition duration-300">
+            <i class="fas fa-image"></i>
+          </a>
+          <a href="{{ url_for('live') }}" class="text-gray-400 hover:text-white transition duration-300">
+            <i class="fas fa-video"></i>
+          </a>
+        </div>
+      </div>
+      <div class="border-t border-gray-700 mt-8 pt-8 text-center text-gray-400">
+        <p>&copy; 2026 Weapon Detection System. All rights reserved.</p>
+        <p class="mt-2 text-sm">Powered by YOLO AI Technology</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- JavaScript -->
+  <script>
+    // Animate confidence bars on load
+    document.addEventListener('DOMContentLoaded', function() {
+      const bars = document.querySelectorAll('.confidence-bar');
+      bars.forEach(bar => {
+        const width = bar.style.width;
+        bar.style.width = '0%';
+        setTimeout(() => {
+          bar.style.width = width;
+        }, 100);
+      });
+    });
+
+    // Share results
+    function shareResults() {
+      alert('Share feature coming soon!');
+    }
+
+    // Alert sound for weapon detection
+    {% if detections %}
+    const detections = {{ detections|tojson }};
+    const weaponClasses = ['grenade', 'gun', 'handgun', 'knife'];
+    let weaponDetected = false;
+
+    for (let d of detections) {
+      if (weaponClasses.includes(d.label.toLowerCase()) && d.confidence > 0.25) {
+        weaponDetected = true;
+        break;
+      }
+    }
+
+    if (weaponDetected) {
+      // Play alert sound
+      setTimeout(() => {
+        const audio = new Audio('https://www.soundjay.com/buttons/bep.mp3');
+        audio.play().catch(e => console.log('Audio play failed:', e));
+        
+        // Show floating alert
+        const alertBox = document.createElement('div');
+        alertBox.className = 'fixed top-4 right-4 bg-red-600 text-white p-4 rounded-xl shadow-xl z-50 animate__animated animate__bounceIn weapon-alert';
+        alertBox.innerHTML = `
+          <div class="flex items-center">
+            <i class="fas fa-exclamation-triangle mr-3 text-xl"></i>
+            <div>
+              <strong class="text-lg">WEAPON DETECTED!</strong>
+              <p class="text-sm opacity-90 mt-1">Security alert triggered. Please take immediate action.</p>
+            </div>
+          </div>
+        `;
+        document.body.appendChild(alertBox);
+        
+        // Remove after 8 seconds
+        setTimeout(() => {
+          alertBox.classList.add('animate__animated', 'animate__fadeOut');
+          setTimeout(() => alertBox.remove(), 300);
+        }, 8000);
+      }, 500);
+    }
+    {% endif %}
+
+    // Fix for image loading
+    document.addEventListener('DOMContentLoaded', function() {
+      const images = document.querySelectorAll('img[src*="outputs"]');
+      images.forEach(img => {
+        // Add cache busting to force image reload
+        const src = img.src;
+        if (src && !src.includes('?')) {
+          img.src = src + '?t=' + new Date().getTime();
+        }
+        
+        // Better error handling
+        img.onerror = function() {
+          console.error('Failed to load image:', this.src);
+          this.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTEyIiBoZWlnaHQ9IjUxMiIgdmlld0JveD0iMCAwIDUxMiA1MTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI1MTIiIGhlaWdodD0iNTEyIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yNTYgMTI4QzI4MS4zNzMgMTI4IDMwNCAxNTAuNjI3IDMwNCAxNzZDMzA0IDIwMS4zNzMgMjgxLjNsaTQyNCAyNTYgMjI0QzIzMC42MjcgMjI0IDIwOCAyMDEuM373MyAyMDggMTc2QzIwOCAxNTAuNjI3IDIzMC42MjcgMTI4IDI1NiAxMjhaTTI1NiAzMjBDMzA3LjIgMzIwIDM1MiAzNDQuOCAzNTIgMzg0VjQxNkMzNTIgNDI1LjQ3MSAzNDQuNDcxIDQzMyAzMzUgNDMzSDE3N0MxNjcuNTI5IDQzMyAxNjAgNDI1LjQ3MSAxNjAgNDE2VjM4NEMxNjAgMzQ0LjggMjA0LjggMzIwIDI1NiAzMjBaIiBmaWxsPSIjOEU5MEEwIi8+Cjwvc3ZnPgo=';
+          this.alt = 'Image failed to load. Please try uploading again.';
+          this.classList.add('p-8', 'bg-gray-100');
+        };
+      });
+    });
+  </script>
+</body>
+</html>

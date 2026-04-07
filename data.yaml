@@ -1,0 +1,17 @@
+names:
+- Grenade
+- Gun
+- Handgun
+- Knife
+- Person
+- Weapon Holding
+nc: 6
+roboflow:
+  license: CC BY 4.0
+  project: teting_generade_weapon
+  url: https://universe.roboflow.com/toicheckdataset/teting_generade_weapon/dataset/1
+  version: 1
+  workspace: toicheckdataset
+test: ../test/images
+train: ../train/images
+val: ../valid/images
