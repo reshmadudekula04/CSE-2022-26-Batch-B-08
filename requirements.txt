@@ -7,3 +7,4 @@ gunicorn
 setuptools
 wheel
 flask
+ultralytics
