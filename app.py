@@ -600,19 +600,19 @@ if __name__ == '__main__':
         print(f"Created output folder: {OUTPUT_FOLDER}")
     
     if __name__ == '__main__':
-    init_db()
-    if MODEL is None:
-        print("Warning: Model failed to load. Please check the model file.")
+        init_db()
+        if MODEL is None:
+            print("Warning: Model failed to load. Please check the model file.")
 
-    # Cleanup on exit
-    import atexit
-    @atexit.register
-    def cleanup():
-        global camera
-        if camera is not None:
-            camera.release()
+        # Cleanup on exit
+        import atexit
+        @atexit.register
+        def cleanup():
+            global camera
+            if camera is not None:
+                camera.release()
 
-    # Run the app
-    port = int(os.environ.get("PORT", 5000))  # Use Render's PORT env variable
-    print(f"Starting Flask server on port {port}...")
-    app.run(host="0.0.0.0", port=port, debug=True, threaded=True)
+        # Run the app
+        port = int(os.environ.get("PORT", 5000))  # Use Render's PORT env variable
+        print(f"Starting Flask server on port {port}...")
+        app.run(host="0.0.0.0", port=port, debug=True, threaded=True)
