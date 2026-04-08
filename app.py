@@ -232,7 +232,6 @@ def logout():
 
 # ---------- START ----------
 init_db()
-load_model()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
