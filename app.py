@@ -128,6 +128,12 @@ def index():
 def about():
     return render_template('about.html')
 
+@app.route('/live')
+def live():
+    if 'user_id' not in session:
+        return redirect('/login')
+    return render_template('live.html')
+
 @app.route('/register', methods=['GET','POST'])
 def register():
     if request.method == 'POST':
