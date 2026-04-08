@@ -65,7 +65,7 @@ def load_model():
         return
 
     try:
-        print("📂 Files in current directory:", os.listdir())
+        #print("📂 Files in current directory:", os.listdir())
         print("📌 Looking for model at:", MODEL_PATH)
 
         if not os.path.exists(MODEL_PATH):
