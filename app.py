@@ -3,7 +3,7 @@ import os
 # ---------- FIX FOR RENDER ----------
 os.environ['YOLO_CONFIG_DIR'] = os.path.join(os.getcwd(), 'yolo_config')
 os.makedirs(os.environ['YOLO_CONFIG_DIR'], exist_ok=True)
-
+import time
 import sqlite3
 import cv2
 from flask import Flask, request, render_template, redirect, url_for, session, flash
@@ -20,7 +20,7 @@ except:
 UPLOAD_FOLDER = os.path.join('static', 'uploads')
 OUTPUT_FOLDER = os.path.join('static', 'outputs')
 DATABASE = os.path.join(os.getcwd(), 'users.db')  # FIXED
-MODEL_PATH = "best.pt"
+MODEL_PATH = os.path.join(os.getcwd(), "best.pt")
 
 app = Flask(__name__)
 app.secret_key = "secret_key"
@@ -55,38 +55,68 @@ def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ['png','jpg','jpeg']
 
 # ---------- DETECTION ----------
+
+def load_model():
+    global MODEL
+
+    if YOLO is None:
+        print("❌ YOLO not installed")
+        MODEL = None
+        return
+
+    try:
+        print("📂 Files in current directory:", os.listdir())
+        print("📌 Looking for model at:", MODEL_PATH)
+
+        if not os.path.exists(MODEL_PATH):
+            print("❌ best.pt NOT FOUND")
+            MODEL = None
+            return
+
+        print("⏳ Loading YOLO model...")
+        MODEL = YOLO(MODEL_PATH)
+        print("✅ YOLO model loaded")
+
+    except Exception as e:
+        print("❌ Model load failed:", str(e))
+        MODEL = None
+        
 def detect_image(image_path):
     global MODEL
 
-    # LOAD MODEL ONLY WHEN NEEDED (IMPORTANT FIX)
     if MODEL is None:
-        try:
-            if YOLO is None or not os.path.exists(MODEL_PATH):
-                print("⚠️ Model not available, skipping detection")
-                return None, [], False
+        load_model()
 
-            print("⏳ Loading model...")
-            MODEL = YOLO(MODEL_PATH)
-            print("✅ Model loaded")
-
-        except Exception as e:
-            print("❌ Model error:", e)
-            return None, [], False
+    if MODEL is None:
+        return None, [], False
 
     try:
+        print("🚀 Running detection...")
+
         results = MODEL(image_path)
+
+        if not results or len(results) == 0:
+            print("❌ No results returned")
+            return None, [], False
+
         result = results[0]
 
         plotted = result.plot()
-        output_name = "out.jpg"
+
+        output_name = f"out_{int(time.time())}.jpg"
         output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_name)
 
-        cv2.imwrite(output_path, plotted)
+        success = cv2.imwrite(output_path, plotted)
 
+        if not success:
+            print("❌ Image write failed")
+            return None, [], False
+
+        print("✅ Detection success")
         return output_name, [], True
 
     except Exception as e:
-        print("❌ Detection error:", e)
+        print("❌ Detection error:", str(e))
         return None, [], False
 
 # ---------- ROUTES ----------
@@ -131,7 +161,7 @@ def login():
         db.close()
 
         if user and check_password_hash(user['password'], request.form['password']):
-            session['user'] = user['id']
+            session['user_id'] = user['id']
             return redirect('/home')
 
         flash("Invalid login")
@@ -140,14 +170,18 @@ def login():
 
 @app.route('/home')
 def home():
-    if 'user' not in session:
+    if 'user_id' not in session:
         return redirect('/login')
     return render_template('home.html')
 
 @app.route('/predict', methods=['GET','POST'])
 def predict():
-    if 'user' not in session:
+    if 'user_id' not in session:
         return redirect('/login')
+
+    global MODEL
+    if MODEL is None:
+        load_model()
 
     if request.method == 'POST':
         file = request.files.get('image')
@@ -161,7 +195,13 @@ def predict():
             path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
             file.save(path)
 
-            output, _, _ = detect_image(path)
+            result = detect_image(path)
+            if result is None:
+                return render_template(
+                    'prediction.html',
+                    result="❌ Detection failed (server issue)"
+                )
+            output, _, _ = result
 
             if output:
                 return render_template(
@@ -185,6 +225,7 @@ def logout():
 
 # ---------- START ----------
 init_db()
+load_model()
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
