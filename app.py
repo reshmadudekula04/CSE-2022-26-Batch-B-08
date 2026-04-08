@@ -91,34 +91,33 @@ def detect_image(image_path):
         return None, [], False
 
     try:
-        print("🚀 Running detection...")
-
         results = MODEL(image_path)
-
-        if not results or len(results) == 0:
-            print("❌ No results returned")
-            return None, [], False
-
         result = results[0]
+
+        detections = []
+
+        for box in result.boxes:
+            cls_id = int(box.cls[0])
+            label = result.names[cls_id]
+            confidence = float(box.conf[0])
+
+            detections.append({
+                "label": label,
+                "confidence": confidence
+            })
 
         plotted = result.plot()
 
         output_name = f"out_{int(time.time())}.jpg"
         output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_name)
 
-        success = cv2.imwrite(output_path, plotted)
+        cv2.imwrite(output_path, plotted)
 
-        if not success:
-            print("❌ Image write failed")
-            return None, [], False
-
-        print("✅ Detection success")
-        return output_name, [], True
+        return output_name, detections, True
 
     except Exception as e:
         print("❌ Detection error:", str(e))
         return None, [], False
-
 # ---------- ROUTES ----------
 @app.route('/')
 def index():
@@ -207,13 +206,14 @@ def predict():
                     'prediction.html',
                     result="❌ Detection failed (server issue)"
                 )
-            output, _, _ = result
+            output, detections, _ = result
 
             if output:
                 return render_template(
                     'prediction.html',
                     image_url=url_for('static', filename='outputs/' + output),
-                    result="Detection Done"
+                    result="Detection Done",
+                    detections=detections
                 )
 
             else:
