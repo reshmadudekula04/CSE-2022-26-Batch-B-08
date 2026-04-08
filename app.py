@@ -118,6 +118,7 @@ def detect_image(image_path):
     except Exception as e:
         print("❌ Detection error:", str(e))
         return None, [], False
+        
 # ---------- ROUTES ----------
 @app.route('/')
 def index():
