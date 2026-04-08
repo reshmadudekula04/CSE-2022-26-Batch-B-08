@@ -6,9 +6,6 @@ os.makedirs(os.environ['YOLO_CONFIG_DIR'], exist_ok=True)
 
 import cv2
 import sqlite3
-import threading
-import time
-from datetime import datetime
 from ultralytics import YOLO
 from flask import Flask, request, render_template, redirect, url_for, session, flash
 from werkzeug.utils import secure_filename
@@ -22,7 +19,7 @@ DATABASE = 'users.db'
 WEAPON_CLASSES = ['Grenade', 'Gun', 'Handgun', 'Knife']
 
 app = Flask(__name__)
-app.secret_key = 'your_secret_key_here'
+app.secret_key = 'super_secret_key_change_this'
 
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
@@ -30,7 +27,7 @@ app.config['OUTPUT_FOLDER'] = OUTPUT_FOLDER
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-# ---------- GLOBALS ----------
+# ---------- GLOBAL ----------
 MODEL = None
 
 # ---------- DATABASE ----------
@@ -56,8 +53,13 @@ def get_db_connection():
 def load_model():
     global MODEL
     try:
+        if not os.path.exists(MODEL_PATH):
+            print("❌ best.pt NOT FOUND")
+            return
+
         MODEL = YOLO(MODEL_PATH)
         print("✅ YOLO model loaded")
+
     except Exception as e:
         print("❌ Model load failed:", e)
 
@@ -73,27 +75,32 @@ def detect_image(image_path):
     if MODEL is None:
         return None, [], False
 
-    results = MODEL(image_path, conf=0.65)
-    result = results[0]
+    try:
+        results = MODEL(image_path, conf=0.65)
+        result = results[0]
 
-    detections = []
-    weapon_detected = False
+        detections = []
+        weapon_detected = False
 
-    if result.boxes is not None:
-        for box in result.boxes:
-            cls = int(box.cls[0])
-            conf = float(box.conf[0])
-            label = MODEL.names[cls]
+        if result.boxes is not None:
+            for box in result.boxes:
+                cls = int(box.cls[0])
+                conf = float(box.conf[0])
+                label = MODEL.names[cls]
 
-            detections.append({
-                'label': label,
-                'confidence': round(conf, 2)
-            })
+                detections.append({
+                    'label': label,
+                    'confidence': round(conf, 2)
+                })
 
-            if label in WEAPON_CLASSES and conf >= 0.65:
-                weapon_detected = True
+                if label in WEAPON_CLASSES and conf >= 0.65:
+                    weapon_detected = True
 
-    return result, detections, weapon_detected
+        return result, detections, weapon_detected
+
+    except Exception as e:
+        print("❌ Detection error:", e)
+        return None, [], False
 
 # ---------- ROUTES ----------
 
@@ -102,7 +109,6 @@ def index():
     return render_template('index.html')
 
 
-# ✅ FIXED: Added About Route (your error)
 @app.route('/about')
 def about():
     return render_template('about.html')
@@ -147,6 +153,7 @@ def register():
             return redirect('/login')
 
         except Exception as e:
+            print("❌ Register error:", e)
             flash("User already exists", "error")
 
     return render_template('register.html')
@@ -158,6 +165,14 @@ def home():
         return redirect('/login')
 
     return render_template('home.html')
+
+
+# ✅ FIXED LIVE ROUTE (was missing before)
+@app.route('/live')
+def live():
+    if 'user_id' not in session:
+        return redirect('/login')
+    return render_template('live.html')
 
 
 @app.route('/predict', methods=['GET','POST'])
@@ -186,13 +201,25 @@ def predict():
             result, detections, weapon_detected = detect_image(filepath)
 
             if result is None:
-                flash("Model not loaded", "error")
+                flash("Model not loaded or detection failed", "error")
                 return redirect(request.url)
 
-            # Save output image
-            output_name = "detected_" + filename
-            output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_name)
-            cv2.imwrite(output_path, result.plot())
+            try:
+                output_name = "detected_" + filename
+                output_path = os.path.join(app.config['OUTPUT_FOLDER'], output_name)
+
+                plotted_img = result.plot()
+
+                if plotted_img is not None:
+                    cv2.imwrite(output_path, plotted_img)
+                else:
+                    flash("Image processing failed", "error")
+                    return redirect(request.url)
+
+            except Exception as e:
+                print("❌ Image save error:", e)
+                flash("Error processing image", "error")
+                return redirect(request.url)
 
             message = "🚨 Weapon detected!" if weapon_detected else "✅ No weapon detected"
 
@@ -212,11 +239,5 @@ def logout():
     return redirect('/')
 
 
-# ---------- MAIN ----------
-if __name__ == "__main__":
-    init_db()
-
-    port = int(os.environ.get("PORT", 10000))
-    print(f"🚀 Running on port {port}")
-
-    app.run(host="0.0.0.0", port=port, debug=False)
+# ---------- INIT ----------
+init_db()
